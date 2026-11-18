@@ -49,13 +49,24 @@
         </div>
 
         <div class="project-stage" role="group" aria-label="Project preview" aria-describedby="project-note">
-          <section class="project-panel" id="panel-social" role="tabpanel" aria-labelledby="tab-social" tabindex="0">
+          <section class="project-panel" id="panel-social" data-note="Space Danta · Visual references and editorial proposals." role="tabpanel" aria-labelledby="tab-social" tabindex="0">
             <div class="panel-heading">
               <h2>Social media</h2>
               <p>Visual content and stories for brands.</p>
             </div>
-            <div class="mosaic mosaic-social" aria-hidden="true">
-              <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+            <div class="social-projects">
+              <figure class="social-reference">
+                <video controls playsinline loop preload="none" poster="proyectos/social_media/space_danta/referencias_visuales/video/poster.jpg" aria-label="Space Danta, first motion and composition reference">
+                  <source src="proyectos/social_media/space_danta/referencias_visuales/video/01_referente_motion.mp4" type="video/mp4">
+                  <a href="proyectos/social_media/space_danta/referencias_visuales/video/01_referente_motion.mp4">Open motion reference</a>
+                </video>
+                <figcaption>01 / Space Danta · Motion reference supplied for this study.</figcaption>
+              </figure>
+              <a class="social-case-link" href="proyectos/social_media/space_danta/index.html">
+                <img src="proyectos/social_media/space_danta/referencias_visuales/presentacion/jerarquias-01.png" alt="Space Danta reference: wide white headlines, dark background and muted violet typography." loading="lazy" width="1100" height="619">
+                <strong>Space Danta <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7M7 7h10v10"/></svg></strong>
+                <span>Visual references, typography, and six editorial proposals for Instagram and LinkedIn.</span>
+              </a>
             </div>
           </section>
           <section class="project-panel" id="panel-multimedia" data-note="17 video projects · Scroll to explore." role="tabpanel" aria-labelledby="tab-multimedia" tabindex="0" hidden>
@@ -63,7 +74,7 @@
               <h2>Multimedia design</h2>
               <p>Video, CGI, and multimedia projects.</p>
             </div>
-            <div class="mosaic mosaic-multimedia">
+            <div class="mosaic mosaic-multimedia" id="multimedia-reels" tabindex="0" role="region" aria-label="Multimedia video gallery">
               <figure class="tile video-tile">
                 <video controls playsinline loop preload="none" poster="proyectos/multimedia/portadas/20260103%20MLV%20CARNAV%20BQLLA%20CARROZA_FINAL_02.jpg" aria-label="20260103 MLV CARNAV BQLLA CARROZA FINAL 02">
                   <source src="proyectos/multimedia/optimizados/20260103%20MLV%20CARNAV%20BQLLA%20CARROZA_FINAL_02.mp4" type="video/mp4">
@@ -184,6 +195,12 @@
                 <figcaption class="video-credit"><a class="studio-link" href="https://spacedanta.com/" target="_blank" rel="noopener noreferrer">Space danta</a> for Malva</figcaption>
               </figure>
             </div>
+            <div class="reel-navigation" aria-label="Video navigation">
+              <button type="button" id="reel-previous" aria-label="Previous video" aria-controls="multimedia-reels"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 13 6-6 6 6M12 7v11"/></svg></button>
+              <span class="reel-position" id="reel-position" role="status" aria-live="polite">1 / 17</span>
+              <button type="button" id="reel-next" aria-label="Next video" aria-controls="multimedia-reels"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 11 6 6 6-6M12 17V6"/></svg></button>
+            </div>
+            <p class="reel-instruction" id="reel-instruction">Swipe up to see the next video</p>
           </section>
           <section class="project-panel" id="panel-3d" role="tabpanel" aria-labelledby="tab-3d" tabindex="0" hidden>
             <div class="panel-heading">
@@ -196,13 +213,13 @@
           </section>
           <p class="glass-hint" aria-hidden="true"><span class="pointer-hint">Hover to explore</span><span class="touch-hint">Tap a category to explore</span></p>
         </div>
-        <p class="prototype-note" id="project-note">Projects will be added here.</p>
+        <p class="prototype-note" id="project-note">Space Danta · Visual references and editorial proposals.</p>
       </section>
 
       <footer class="contact">
-        <a href="mailto:mariana.zu.gi_2002@hotmail.com">Let’s talk <span aria-hidden="true">↗</span></a>
-        <a href="https://www.instagram.com/zugis_cut/" target="_blank" rel="noopener noreferrer" aria-label="Professional Instagram, @zugis_cut (opens in a new tab)">@zugis_cut <span aria-hidden="true">↗</span></a>
-        <a href="assets/cv_mariana_zuluaga.pdf">Resume <span aria-hidden="true">↗</span></a>
+        <a href="mailto:mariana.zu.gi_2002@hotmail.com">Let’s talk <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+        <a href="https://www.instagram.com/zugis_cut/" target="_blank" rel="noopener noreferrer" aria-label="Professional Instagram, @zugis_cut (opens in a new tab)">@zugis_cut <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+        <a href="assets/cv_mariana_zuluaga.pdf">Resume <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
       </footer>
     </main>
   </body>

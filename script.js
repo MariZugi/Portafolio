@@ -5,8 +5,8 @@ const hoverInput = window.matchMedia('(hover: hover) and (pointer: fine)');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const work = document.querySelector('.work');
 const projectNote = document.querySelector('#project-note');
-const placeholderNote = projectNote.textContent;
-const projectVideos = Array.from(document.querySelectorAll('.video-tile video'));
+const placeholderNote = 'Projects will be added here.';
+const projectVideos = Array.from(document.querySelectorAll('.work video'));
 const description = document.querySelector('#category-description');
 const generalDescription = description.textContent;
 const WORD_INTERVAL_MS = 120;
@@ -246,3 +246,58 @@ const connectionObserver = new ResizeObserver(positionConnections);
 document.fonts.ready.then(positionConnections);
 paths.forEach((path) => path.setAttribute('pathLength', '1'));
 document.documentElement.classList.add('motion-ready');
+
+// Vertical mobile reel: native touch scrolling, buttons, and keyboard support.
+const reelViewport = document.querySelector('#multimedia-reels');
+const reelCards = Array.from(reelViewport.querySelectorAll('.video-tile'));
+const reelMobile = window.matchMedia('(max-width: 720px)');
+const reelPosition = document.querySelector('#reel-position');
+const reelPrevious = document.querySelector('#reel-previous');
+const reelNext = document.querySelector('#reel-next');
+let reelIndex = 0;
+function showReel(index) {
+  const nextIndex = Math.max(0, Math.min(reelCards.length - 1, index));
+  const top = reelCards[nextIndex].offsetTop - reelCards[0].offsetTop;
+  reelIndex = nextIndex;
+  reelPosition.textContent = `${nextIndex + 1} / ${reelCards.length}`;
+  reelPrevious.disabled = nextIndex === 0;
+  reelNext.disabled = nextIndex === reelCards.length - 1;
+  reelViewport.scrollTo({ top, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+}
+function updateReel() {
+  if (!reelMobile.matches || reelViewport.closest('[hidden]')) return;
+  let closest = 0;
+  let distance = Infinity;
+  reelCards.forEach((card, index) => {
+    const delta = Math.abs(card.offsetTop - reelCards[0].offsetTop - reelViewport.scrollTop);
+    if (delta < distance) { distance = delta; closest = index; }
+  });
+  reelIndex = closest;
+  reelPosition.textContent = `${closest + 1} / ${reelCards.length}`;
+  reelPrevious.disabled = closest === 0;
+  reelNext.disabled = closest === reelCards.length - 1;
+}
+reelViewport.addEventListener('scrollend', updateReel);
+reelPrevious.addEventListener('click', () => showReel(reelIndex - 1));
+reelNext.addEventListener('click', () => showReel(reelIndex + 1));
+let reelFrame;
+reelViewport.addEventListener('scroll', () => {
+  cancelAnimationFrame(reelFrame);
+  reelFrame = requestAnimationFrame(updateReel);
+}, { passive: true });
+reelViewport.addEventListener('keydown', (event) => {
+  if (!reelMobile.matches || event.target !== reelViewport) return;
+  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  showReel(event.key === 'Home' ? 0 : event.key === 'End' ? reelCards.length - 1 : reelIndex + (event.key === 'ArrowDown' ? 1 : -1));
+});
+const reelVisibility = new IntersectionObserver((entries) => {
+  if (!reelMobile.matches) return;
+  entries.forEach((entry) => {
+    if (entry.intersectionRatio < .55) entry.target.querySelector('video').pause();
+  });
+}, { root: reelViewport, threshold: [.55] });
+reelCards.forEach((card) => reelVisibility.observe(card));
+new ResizeObserver(updateReel).observe(reelViewport);
+reelMobile.addEventListener('change', updateReel);
+updateReel();
