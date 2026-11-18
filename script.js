@@ -92,7 +92,7 @@ projectVideos.forEach((video) => {
   let hoverPlayback = false;
 
   video.addEventListener('pointerenter', (event) => {
-    if (!hoverInput.matches || event.pointerType === 'touch') return;
+    if (!hoverInput.matches || event.pointerType === 'touch' || (video.closest('.mosaic-multimedia') && window.matchMedia('(max-width: 720px)').matches)) return;
     hoverPlayback = true;
     video.muted = true;
     // Playback can be interrupted when the pointer quickly leaves the video.
@@ -247,22 +247,68 @@ document.fonts.ready.then(positionConnections);
 paths.forEach((path) => path.setAttribute('pathLength', '1'));
 document.documentElement.classList.add('motion-ready');
 
-// Vertical mobile reel: native touch scrolling, buttons, and keyboard support.
+// Vertical mobile reels: only the centered, on-screen video may play.
 const reelViewport = document.querySelector('#multimedia-reels');
 const reelCards = Array.from(reelViewport.querySelectorAll('.video-tile'));
+const reelVideos = reelCards.map((card) => card.querySelector('video'));
 const reelMobile = window.matchMedia('(max-width: 720px)');
 const reelPosition = document.querySelector('#reel-position');
 const reelPrevious = document.querySelector('#reel-previous');
 const reelNext = document.querySelector('#reel-next');
+const reelPlayback = document.querySelector('#reel-playback');
+const reelSound = document.querySelector('#reel-sound');
+const reelHint = document.querySelector('#reel-instruction');
+const reelRatios = new Map();
 let reelIndex = 0;
+let reelOnScreen = false;
+let reelPausedByUser = false;
+let reelSoundEnabled = false;
+
+function updatePlaybackButtons() {
+  const playing = !reelVideos[reelIndex].paused;
+  reelPlayback.setAttribute('aria-label', playing ? 'Pause video' : 'Play video');
+  reelPlayback.querySelector('[data-icon="play"]').toggleAttribute('hidden', playing);
+  reelPlayback.querySelector('[data-icon="pause"]').toggleAttribute('hidden', !playing);
+  reelSound.setAttribute('aria-label', reelSoundEnabled ? 'Turn sound off' : 'Turn sound on');
+  reelSound.setAttribute('aria-pressed', String(reelSoundEnabled));
+  reelSound.querySelector('[data-icon="muted"]').toggleAttribute('hidden', reelSoundEnabled);
+  reelSound.querySelector('[data-icon="sound"]').toggleAttribute('hidden', !reelSoundEnabled);
+}
+function syncReelPlayback() {
+  if (!reelMobile.matches) return;
+  const current = reelVideos[reelIndex];
+  const viewportBox = reelViewport.getBoundingClientRect();
+  const cardBox = reelCards[reelIndex].getBoundingClientRect();
+  const screenHeight = Math.max(0, Math.min(viewportBox.bottom, innerHeight) - Math.max(viewportBox.top, 0));
+  const cardHeight = Math.max(0, Math.min(cardBox.bottom, viewportBox.bottom, innerHeight) - Math.max(cardBox.top, viewportBox.top, 0));
+  reelOnScreen = viewportBox.height > 0 && screenHeight / viewportBox.height >= .65;
+  const canPlay = reelOnScreen && !document.hidden && !reelViewport.closest('[hidden]') && cardBox.height > 0 && cardHeight / cardBox.height >= .65;
+  reelVideos.forEach((video) => {
+    if (video !== current || !canPlay || reelPausedByUser) video.pause();
+  });
+  if (!canPlay || reelPausedByUser || !current.paused) return;
+  current.muted = !reelSoundEnabled;
+  current.preload = 'auto';
+  const intendedIndex = reelIndex;
+  current.play().then(() => {
+    if (intendedIndex !== reelIndex || !reelOnScreen || document.hidden || reelViewport.closest('[hidden]')) current.pause();
+    reelHint.textContent = 'Swipe up for the next video · Tap video to pause';
+    updatePlaybackButtons();
+  }).catch((error) => {
+    if (error.name === 'AbortError') return;
+    if (!current.muted && error.name === 'NotAllowedError') {
+      reelSoundEnabled = false;
+      current.muted = true;
+      updatePlaybackButtons();
+      if (intendedIndex === reelIndex && reelOnScreen) current.play().catch(() => {});
+    } else {
+      reelHint.textContent = 'Tap the video or the play button to start';
+    }
+  });
+}
 function showReel(index) {
   const nextIndex = Math.max(0, Math.min(reelCards.length - 1, index));
-  const top = reelCards[nextIndex].offsetTop - reelCards[0].offsetTop;
-  reelIndex = nextIndex;
-  reelPosition.textContent = `${nextIndex + 1} / ${reelCards.length}`;
-  reelPrevious.disabled = nextIndex === 0;
-  reelNext.disabled = nextIndex === reelCards.length - 1;
-  reelViewport.scrollTo({ top, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+  reelViewport.scrollTo({ top: reelCards[nextIndex].offsetTop - reelCards[0].offsetTop, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
 }
 function updateReel() {
   if (!reelMobile.matches || reelViewport.closest('[hidden]')) return;
@@ -272,32 +318,139 @@ function updateReel() {
     const delta = Math.abs(card.offsetTop - reelCards[0].offsetTop - reelViewport.scrollTop);
     if (delta < distance) { distance = delta; closest = index; }
   });
+  if (reelIndex !== closest) reelPausedByUser = false;
   reelIndex = closest;
   reelPosition.textContent = `${closest + 1} / ${reelCards.length}`;
   reelPrevious.disabled = closest === 0;
   reelNext.disabled = closest === reelCards.length - 1;
+  syncReelPlayback();
+  updatePlaybackButtons();
 }
-reelViewport.addEventListener('scrollend', updateReel);
+function toggleReelPlayback() {
+  const current = reelVideos[reelIndex];
+  reelPausedByUser = !current.paused;
+  if (reelPausedByUser) current.pause();
+  else syncReelPlayback();
+  updatePlaybackButtons();
+}
+function configureReels() {
+  reelVideos.forEach((video) => {
+    video.pause();
+    video.controls = !reelMobile.matches;
+    video.disablePictureInPicture = reelMobile.matches;
+    video.disableRemotePlayback = reelMobile.matches;
+    if (reelMobile.matches) {
+      video.muted = !reelSoundEnabled;
+      video.defaultMuted = true;
+      video.tabIndex = 0;
+    } else {
+      video.removeAttribute('tabindex');
+    }
+  });
+  updateReel();
+}
 reelPrevious.addEventListener('click', () => showReel(reelIndex - 1));
 reelNext.addEventListener('click', () => showReel(reelIndex + 1));
+reelPlayback.addEventListener('click', toggleReelPlayback);
+reelSound.addEventListener('click', () => {
+  reelSoundEnabled = !reelSoundEnabled;
+  reelVideos.forEach((video) => { video.muted = !reelSoundEnabled; });
+  updatePlaybackButtons();
+  syncReelPlayback();
+});
+reelVideos.forEach((video) => {
+  video.addEventListener('click', () => { if (reelMobile.matches) toggleReelPlayback(); });
+  video.addEventListener('keydown', (event) => {
+    if (!reelMobile.matches || ![' ', 'Enter'].includes(event.key)) return;
+    event.preventDefault();
+    toggleReelPlayback();
+  });
+  video.addEventListener('play', updatePlaybackButtons);
+  video.addEventListener('pause', updatePlaybackButtons);
+});
 let reelFrame;
 reelViewport.addEventListener('scroll', () => {
   cancelAnimationFrame(reelFrame);
   reelFrame = requestAnimationFrame(updateReel);
 }, { passive: true });
+reelViewport.addEventListener('scrollend', updateReel);
 reelViewport.addEventListener('keydown', (event) => {
-  if (!reelMobile.matches || event.target !== reelViewport) return;
-  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+  if (!reelMobile.matches || event.target !== reelViewport || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
   event.preventDefault();
   showReel(event.key === 'Home' ? 0 : event.key === 'End' ? reelCards.length - 1 : reelIndex + (event.key === 'ArrowDown' ? 1 : -1));
 });
 const reelVisibility = new IntersectionObserver((entries) => {
-  if (!reelMobile.matches) return;
-  entries.forEach((entry) => {
-    if (entry.intersectionRatio < .55) entry.target.querySelector('video').pause();
-  });
-}, { root: reelViewport, threshold: [.55] });
+  entries.forEach((entry) => reelRatios.set(entry.target, entry.intersectionRatio));
+  updateReel();
+}, { root: reelViewport, threshold: [0, .4, .65, .9] });
 reelCards.forEach((card) => reelVisibility.observe(card));
+const reelPageVisibility = new IntersectionObserver((entries) => {
+  reelOnScreen = entries[0].intersectionRatio >= .65;
+  syncReelPlayback();
+}, { threshold: [0, .65] });
+reelPageVisibility.observe(reelViewport);
 new ResizeObserver(updateReel).observe(reelViewport);
-reelMobile.addEventListener('change', updateReel);
-updateReel();
+reelMobile.addEventListener('change', configureReels);
+document.addEventListener('visibilitychange', syncReelPlayback);
+window.addEventListener('scroll', syncReelPlayback, { passive: true });
+new MutationObserver(() => { updateReel(); syncReelPlayback(); }).observe(document.querySelector('#panel-multimedia'), { attributes: true, attributeFilter: ['hidden'] });
+configureReels();
+
+// Graphic collections: native horizontal swipe, accessible navigation, and full view.
+document.querySelectorAll('[data-graphic-gallery]').forEach((gallery) => {
+  const track = gallery.querySelector('.graphic-track');
+  const cards = Array.from(track.querySelectorAll('.graphic-piece'));
+  const previous = gallery.querySelector('[data-graphic-previous]');
+  const next = gallery.querySelector('[data-graphic-next]');
+  const count = gallery.querySelector('.graphic-count');
+  let index = 0;
+  function update() {
+    if (!track.clientWidth) return;
+    let distance = Infinity;
+    const visible = [];
+    cards.forEach((card, candidate) => {
+      const left = card.offsetLeft - cards[0].offsetLeft;
+      const delta = Math.abs(left - track.scrollLeft);
+      if (delta < distance) { distance = delta; index = candidate; }
+      if (left < track.scrollLeft + track.clientWidth - 4 && left + card.clientWidth > track.scrollLeft + 4) visible.push(candidate + 1);
+    });
+    previous.disabled = track.scrollLeft < 3;
+    next.disabled = track.scrollWidth - track.clientWidth - track.scrollLeft < 3;
+    count.textContent = `${visible[0] === visible.at(-1) ? visible[0] : visible[0] + '–' + visible.at(-1)} / ${cards.length}`;
+  }
+  function move(delta) {
+    const card = cards[Math.max(0, Math.min(cards.length - 1, index + delta))];
+    track.scrollTo({ left: card.offsetLeft - cards[0].offsetLeft, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+  }
+  previous.addEventListener('click', () => move(-1));
+  next.addEventListener('click', () => move(1));
+  track.addEventListener('keydown', (event) => {
+    if (event.target !== track || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+    move(event.key === 'ArrowRight' ? 1 : -1);
+  });
+  let frame;
+  track.addEventListener('scroll', () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); }, { passive: true });
+  new ResizeObserver(update).observe(track);
+  update();
+});
+const graphicDialog = document.querySelector('#graphic-dialog');
+if (graphicDialog) {
+  document.querySelectorAll('[data-graphic-open]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const original = button.querySelector('img');
+      const image = graphicDialog.querySelector('img');
+      image.src = button.dataset.full;
+      image.alt = original.alt;
+      graphicDialog.querySelector('h2').textContent = button.dataset.title;
+      graphicDialog.querySelector('a').href = button.dataset.source;
+      graphicDialog.showModal();
+    });
+  });
+  graphicDialog.querySelector('button').addEventListener('click', () => graphicDialog.close());
+  graphicDialog.addEventListener('click', (event) => {
+    if (event.target !== graphicDialog) return;
+    const box = graphicDialog.getBoundingClientRect();
+    if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) graphicDialog.close();
+  });
+}
