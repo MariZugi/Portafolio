@@ -414,6 +414,9 @@ document.querySelectorAll('[data-graphic-gallery]').forEach((gallery) => {
       if (delta < distance) { distance = delta; index = candidate; }
       if (left < track.scrollLeft + track.clientWidth - 4 && left + card.clientWidth > track.scrollLeft + 4) visible.push(candidate + 1);
     });
+    const scrollable = track.scrollWidth - track.clientWidth > 3;
+    gallery.querySelector('.graphic-navigation').hidden = !scrollable;
+    gallery.querySelector('.graphic-hint').textContent = scrollable ? 'Swipe or scroll horizontally to explore. Tap a piece to enlarge it.' : 'Select a piece to view it in full.';
     previous.disabled = track.scrollLeft < 3;
     next.disabled = track.scrollWidth - track.clientWidth - track.scrollLeft < 3;
     count.textContent = `${visible[0] === visible.at(-1) ? visible[0] : visible[0] + '–' + visible.at(-1)} / ${cards.length}`;
